@@ -1,4 +1,4 @@
-function [u, du, cc, m] = addDisplacements(u0,du0,cc0,m0,dm)
+function [u, du, cc, m] = addDisplacements(u0,du0,cc0,m0,dm,iteration)
 % u = addDisplacements(u,thr,epsilon) removes outliers using the universal
 % outlier test based on
 %
@@ -57,7 +57,7 @@ end
 F_cc = griddedInterpolant(m0_{1}, m0_{2}, m0_{3}, cc0.max, 'linear');
 cc.max = F_cc(m{1},m{2},m{3});
 
-if  sum(cellfun(@numel, u0)) == 3
+if  iteration == 1
     u = du; % on first iteration u = du
 else
     u = cellfun(@plus,u0,du,'UniformOutput', 0); % else u^(k) = sum(u^(k-1)) + du (see eq. 7)

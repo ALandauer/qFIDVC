@@ -6,7 +6,7 @@ sigma       = [1 1 1];
 % nSigma      = 3*sigma;
 
 % desired output size.
-sizeI           = [512,512,192];
+sizeI           = [256,256,192];
 
 % beads per pixel
 seedingDensity  = 0.005;
@@ -26,7 +26,7 @@ nDeformations = 5; % number of deformation increments
 
 
 % stretch
-`L(1) = 1.01;
+L(1) = 1.02;
 L(2) = 1/L(1);
 L(3) = L(2);
 
@@ -50,7 +50,7 @@ end
 
 for i = 1:length(I)
 vol{i} = I{i};
-save(['vol0',num2str(i),'.mat','vol']);
+save(['vol_series0',num2str(i),'.mat'],'vol');
 end
 
 % vol{1} = I{2};

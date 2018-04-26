@@ -70,26 +70,27 @@ while ~converged01 && i - 1 < maxIterations
         
         [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
         %warp images with displacement guess if a cumulative step
-% %         if i == 2 %only on the first iteration
-% %             if numel(u{1}) == 1 %on the first image the disp guess is zero
-% %                 u{1} = zeros(length(m{1}),length(m{2}),length(m{3}));
-% %                 u{2} = zeros(length(m{1}),length(m{2}),length(m{3}));
-% %                 u{3} = zeros(length(m{1}),length(m{2}),length(m{3}));
-% %             end
-% %             u{1} = inpaint_nans3(u{1}); %inpaint nans from last time's edge pts
-% %             u{2} = inpaint_nans3(u{2});
-% %             u{3} = inpaint_nans3(u{3});
-% %             I = volumeMapping(I,m,u); %otherwise map the images w/ the initial guess
-% %             [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
-% %             %             u{1} = 0; %reset disp to zero
-% %             %             u{2} = 0;
-% %         end
+        if i == 2 %only on the first iteration
+            if numel(u{1}) == 1 %on the first image the disp guess is zero
+                u{1} = zeros(length(m{1}),length(m{2}),length(m{3}));
+                u{2} = zeros(length(m{1}),length(m{2}),length(m{3}));
+                u{3} = zeros(length(m{1}),length(m{2}),length(m{3}));
+            end
+        else
+            u{1} = inpaint_nans3(u{1}); %inpaint nans from last time's edge pts
+            u{2} = inpaint_nans3(u{2});
+            u{3} = inpaint_nans3(u{3});
+            I = volumeMapping(I,m,u); %otherwise map the images w/ the initial guess
+            [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
+            %             u{1} = 0; %reset disp to zero
+            %             u{2} = 0;
+        end
         
         % run cross-correlation to get an estimate of the displacements
         [du, cc{i-1}] = DVC(I,sSize(i,:),sSpacing(i,:),DVCPadSize,ccThreshold);
         
         % add the displacements from previous iteration to current
-        [u, ~, cc{i-1}, mFinal] = addDisplacements(u,du,cc{i-1},m,dm);
+        [u, ~, cc{i-1}, mFinal] = addDisplacements(u,du,cc{i-1},m,dm,i-1);
         
         % filter the  displacements using a predictor filter
         u = filterDisplacements(u,sSize(i,:)/dm);
