@@ -140,11 +140,11 @@ prePad = sSize/2;
 postPad = sSize/2;
 
 sizeI = size(I{1});
-I{1} = padarray(I{1},prePad,'replicate','pre');
-I{1} = padarray(I{1},postPad,'replicate','post');
+I{1} = padarray(I{1},prePad,0,'pre');
+I{1} = padarray(I{1},postPad,0,'post');
 
-I{2} = padarray(I{2},prePad,'replicate','pre');
-I{2} = padarray(I{2},postPad,'replicate','post');
+I{2} = padarray(I{2},prePad,0,'pre');
+I{2} = padarray(I{2},postPad,0,'post');
 
 
 idx = cell(1,3);

@@ -66,7 +66,7 @@ clear; close all;
 %%
 sSize = [64 64 64];
 sSizeMin = 32;
-runMode = 'inc';
+runMode = 'c';
 filename = 'vol_series*.mat';
 % filename = 'Crop*.mat';
 % filename = 'test*.mat';

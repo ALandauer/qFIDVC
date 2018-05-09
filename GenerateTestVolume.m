@@ -21,12 +21,10 @@ x0 = [x0(:,1)*(sizeI(1) - 1) + 1, x0(:,2)*(sizeI(2) - 1) + 1,x0(:,3)*(sizeI(3) -
 I0 = seedBeadsN(sigma,x0,sizeI);
 
 %% DEFORM IMAGE
-nDeformations = 5; % number of deformation increments
-
-
+nDeformations = 15; % number of deformation increments
 
 % stretch
-L(1) = 1.02;
+L(1) = 1.05;
 L(2) = 1/L(1);
 L(3) = L(2);
 
@@ -49,8 +47,8 @@ for i = 2:nDeformations
 end
 
 for i = 1:length(I)
-vol{i} = I{i};
-save(['vol_series0',num2str(i),'.mat'],'vol');
+vol{1} = I{i};
+save(['vol_series_10',num2str(i),'.mat'],'vol');
 end
 
 % vol{1} = I{2};
