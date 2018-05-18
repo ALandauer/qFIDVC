@@ -65,16 +65,15 @@
 clear; close all;
 %%
 sSize = [64 64 64];
-sSizeMin = 32;
-runMode = 'c';
+sSizeMin = 16;
+runMode = 'i';
 filename = 'vol_series*.mat';
 % filename = 'Crop*.mat';
 % filename = 'test*.mat';
 
-% Estimate displacements via IDVC
-[u, cc, dm, m] = funIDVC(filename, sSize, sSizeMin, runMode);
+% Estimate displacements via qIDVC
+[u, ~, dm, m] = funIDVC(filename, sSize, sSizeMin, runMode);
 
-% save('resultsFIDVCss16.mat','u','cc','dm', 'm');
+save('results_qDVC_ss16_inc.mat','u','sSize','sSizeMin','dm', 'm', 'runMode');
 % save('resultsFIDVCnewsSize16.mat','u','cc','dm', 'm');
-
-
+% save('data_20180510_1449','-v7.3')
