@@ -65,9 +65,9 @@
 clear; close all;
 %%
 sSize = [64 64 64];
-sSizeMin = 16;
+sSizeMin = 32;
 runMode = 'i';
-filename = 'vol_series*.mat';
+filename = 'vol*.mat';
 % filename = 'Crop*.mat';
 % filename = 'test*.mat';
 
@@ -77,3 +77,16 @@ filename = 'vol_series*.mat';
 save('results_qDVC_ss16_inc.mat','u','sSize','sSizeMin','dm', 'm', 'runMode');
 % save('resultsFIDVCnewsSize16.mat','u','cc','dm', 'm');
 % save('data_20180510_1449','-v7.3')
+
+%%
+figure
+subplot(1,3,1)
+hist(u{1}{1}(:),100)
+subplot(1,3,2)
+hist(u{1}{2}(:),100)
+subplot(1,3,3)
+hist(u{1}{3}(:),100)
+
+
+
+

@@ -143,7 +143,7 @@ for stretch = 1:length(stretch_lvls)
     %photon capture
     [rng1,rng2] = RandStream.create('mrg32k3a','Seed','shuffle','NumStreams',2);
     RandStream.setGlobalStream(rng1);
-    I0 = poissrnd(I0_);
+    vol{1} = poissrnd(vol{1});
     RandStream.setGlobalStream(rng2);
     tic
     I1 = poissrnd(I0_);

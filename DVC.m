@@ -44,11 +44,11 @@ I{1} = I{1}+noise1;
 I{2} = I{2}+noise2;
 
 % A = cell(1,mSize_);
+% A = cellfun(@(x) zeros(sSize/4),A,'uniformoutput',0);
 
 for k = 1:mSize_
     
-    
-    tStart = tic; % begin timer
+%     tStart = tic; % begin timer
     %--------------------------------------------------------------------------
     % grab the moving subset from the images
     subst = I{1}(m{1}(k,:),m{2}(k,:),m{3}(k,:));
@@ -58,16 +58,21 @@ for k = 1:mSize_
     subst = MTF.*subst; B = MTF.*B;
     
     % run cross-correlation
-    cc.A{k} = xCorr3(subst,B,sSize);
-
+    A = xCorr3(subst,B,sSize);
+    
     % find maximum index of the cross-correlaiton
-    [max_val(k), maxIdx{k}] = max(cc.A{k}(:));
+    [max_val(k), maxIdx] = max(A(:));
+    
+    %find qfactors
+    cc.A{1} = A;
+    qfactors(k,:) = compute_qFactor(cc,k);
+%     A{k} = 
     
     % compute voxel resolution displacements
-    [u1, u2, u3] = ind2sub(sSize,maxIdx{k});
+    [u1, u2, u3] = ind2sub(sSize,maxIdx);
     
     % gather the 3x3x3 voxel neighborhood around the peak
-    try xCorrPeak = reshape(cc.A{k}(u1 + (-1:1), u2 + (-1:1), u3 + (-1:1)),27,1);
+    try xCorrPeak = reshape(A(u1 + (-1:1), u2 + (-1:1), u3 + (-1:1)),27,1);
         % last squares fitting of the peak to calculate sub-voxel displacements
         du123 = lsqPolyFit3(xCorrPeak, M{1}, M{2});
         u123(k,:) = [u1 u2 u3] + du123' - sSize/2 - 1;
@@ -82,10 +87,15 @@ for k = 1:mSize_
     %     u123(k,:) = [u1 u2 u3] + du123' - (sSize/2) - 1;
     %--------------------------------------------------------------------------
     
-    
 end
 
-cc.maxIdx = maxIdx;
+for k = 1:2
+    qf_ = (qfactors(:,k)-min(qfactors(:,k)));
+    cc.qfactors(:,k) = qf_/max(qf_);
+end
+
+% cc.A = A;
+% cc.maxIdx = maxIdx;
 cc.max = max_val;
 
 
@@ -105,6 +115,8 @@ cc.max = reshape(double(cc.max),mSize);
     removeBadCorrelations(cc,ccThreshold,spacingChange,mSize);
 cc.sSpacing = sSpacing(end,:);
 cc.sSize = sSize;
+
+cc.A = [];
 
 % % cc = reshape(double(cc),mSize);
 % cc = permute(cc,[2 1 3]);
@@ -301,36 +313,12 @@ end
 function [cc, ccMask] = ...
     removeBadCorrelations(cc,ccThreshold,sizeChange,mSize)
 
-%get peak locations and cc_min maps (i.e. cc - cc(min))
-[peak,cc_min] = cellfun(@(x) cc_max_find(x),cc.A,'UniformOutput',0);
-
-%compute two primary quality metrics, as given in "Xue Z, Particle Image
-% Velocimetry Correlation Signal-to-noise Metrics, Particle Image
-% Pattern Mutual Information and Measurement uncertainty Quantification.
-% MS Thesis, Virginia Tech, 2014.
-
-%peak to corr. energy ratio
-pce = cellfun(@(x,y) (y^2)/(1/numel(x)*(sum(abs(x(:).^2)))),cc_min,peak,'UniformOutput',0);
-%min value -> 1 (worst case)
-
-%peak to entropy ratio
-ppe = cellfun(@(x) q_entropy(x),cc_min,'UniformOutput',0);%peak to cc (information) entropy
-%min value -> 0 (worst case)
-
-qfactors_ = cell2mat(...
-    cellfun(@(x,y) [x(:);y(:)], pce,ppe,'UniformOutput',0))';
-
-for k = 1:2
-    qf_ = (qfactors_(:,k)-min(qfactors_(:,k)));
-    cc.qfactors(:,k) = qf_/max(qf_);
-end
-
 if sizeChange == 1
     %recompute threshold, only use pce & ppe since these give the best
     %results emprically.
     for ii = 1:2
         
-        [qf_para{ii},single_distro] = bimodal_gauss_fit(cc.qfactors(ii,:));
+        [qf_para{ii},single_distro] = bimodal_gauss_fit(cc.qfactors(:,ii));
         
         if single_distro == 0%(qf_para{ii}(2) + 2*qf_para{ii}(4)) < (qf_para{ii}(3) - 2*qf_para{ii}(5))
             cc.q_thresh{ii} = qf_para{ii}(3) - ccThreshold*qf_para{ii}(5);
@@ -358,6 +346,30 @@ ccMask = ones(size(qfactors_accept)) + ...
     zeros(size(qfactors_accept)).*qfactors_accept;
 
 end
+
+function qfactors = compute_qFactor(cc,qnum)
+
+%get peak locations and cc_min maps (i.e. cc - cc(min))
+[peak,cc_min] = cellfun(@(x) cc_max_find(double(x)),cc.A,'UniformOutput',0);
+
+%compute two primary quality metrics, as given in "Xue Z, Particle Image
+% Velocimetry Correlation Signal-to-noise Metrics, Particle Image
+% Pattern Mutual Information and Measurement uncertainty Quantification.
+% MS Thesis, Virginia Tech, 2014.
+
+%peak to corr. energy ratio
+pce = cellfun(@(x,y) (abs(y)^2)/(1/numel(x)*(sum(abs(x(:)).^2))),cc_min,peak,'UniformOutput',0);
+%min value -> 1 (worst case)
+
+%peak to entropy ratio
+ppe = cellfun(@(x) q_entropy(double(x)),cc_min,'UniformOutput',0);%peak to cc (information) entropy
+%min value -> 0 (worst case)
+
+qfactors = cell2mat(...
+    cellfun(@(x,y) [x(:);y(:)], pce,ppe,'UniformOutput',0))';
+
+end
+
 
 %% ========================================================================
 function [paramEsts,single_distro] = bimodal_gauss_fit(x)
@@ -447,7 +459,7 @@ end
 function [ppe] = q_entropy(cc_min)
 %compute entropy q-factor for a given cc map
 
-[cc_hist,~] = histcounts(cc_min,150); %get histogram values
+[cc_hist,~] = histcounts(cc_min,30); %get histogram values
 
 entropy = 0;
 p = cc_hist/sum(cc_hist); %compute probablities

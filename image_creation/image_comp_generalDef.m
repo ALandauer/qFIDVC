@@ -1,5 +1,6 @@
 function [] = image_comp_generalDef(folder)
 
+% folder = ['./generated_datasets'];
 %compose image with many beads
 format short
 
@@ -48,7 +49,7 @@ disp('image generation')
 % small_bead_img = small_bead_synth(defMat,bead_size);
 
 %steps to progress the deformation through
-dSteps = 0.1:0.1:1;
+dSteps = 0:0.3:1;
 
 t0 = tic;
 % I = cell(1,length(translation));
@@ -66,8 +67,8 @@ for step = 1:length(dSteps)
     x1 = zeros(size(x0));
     small_bead_img = cell(1,length(x0));
     
-    %for each bead, compute the local deformation gradient
-    for ii = 1:length(x0)
+    %for each bead, compute the local deformation gradient (do in parallel)
+    parfor ii = 1:length(x0)
         
         %compute the deformation matrix to impose on the bead
         if strORdisp == 's'

@@ -65,7 +65,7 @@ for i = 2:numImages % Reads Volumes Starting on the Second Volumes
     
     %Start DVC
     disp(['Current file: ' fileInfo.filename{i}])
-    [u_, cc{i-1}, dm, m, tSwitch(i-1)] = IDVC(I,sSize0,sSizeMin,u_);
+    [u_, cc{i-1}, dm, m, tSwitch(i-1)] = IDVC(I,sSize0,sSizeMin,u_,runMode);
     
     % Saving iterations of the DVC
     u{i-1}{1} = -u_{1};  u{i-1}{2} = -u_{2};  u{i-1}{3} = -u_{3}; u{i-1}{4} = u_{4};

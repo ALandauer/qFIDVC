@@ -1,4 +1,4 @@
-function [u, cc, dm, mFinal, decorrFlag] = IDVC(varargin)
+function [u, cc, dm, m, decorrFlag] = IDVC(varargin)
 % [u, cc] = IDVC(I,sSize,u0,className);
 % I = filterDisplacements(I0,filterSize,z) applies a low-pass convolution
 % filter to the displacement field to mitigate divergence based on
@@ -38,10 +38,10 @@ function [u, cc, dm, mFinal, decorrFlag] = IDVC(varargin)
 
 
 % PRESET CONSTANTS
-maxIterations = 10; % maximum number of iterations
+maxIterations = 8; % maximum number of iterations
 dm = 8; % desired output mesh spacing
 convergenceCrit = [0.25, 0.5, 0.0625]; % convergence criteria
-ccThreshold = 0.75; % bad cross-correlation threshold (mean - ccThreshold*stdev for q-factor distribution)
+ccThreshold = 1.25; % bad cross-correlation threshold (mean - ccThreshold*stdev for q-factor distribution)
 
 sizeThresh = 1331;  %Threshold for maximum size of bad correlation regions
 percentThresh = 25; %Threshold for max % of total measurement pts failing q-factor testing
@@ -52,7 +52,7 @@ cc{1} = struct('max',[],'maxIdx',[],'qfactors',[],'q_thresh',[],...
     'qfactors_accept',[]);
 
 
-[I0, sSize, sSizeMin, sSpacing, padSize, DVCPadSize, u] = parseInputs(varargin{:});
+[I0, sSize, sSizeMin, sSpacing, padSize, DVCPadSize, u, runMode] = parseInputs(varargin{:});
 
 % START ITERATING
 i = 2; converged01 = 0; SSE = []; I = I0;
@@ -69,22 +69,24 @@ while ~converged01 && i - 1 < maxIterations
         finalSize = sSize(i,:);
         
         [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
-        %warp images with displacement guess if a cumulative step
-        if i == 2 %only on the first iteration
-            if numel(u{1}) == 1 %on the first image the disp guess is zero
-                u{1} = zeros(length(m{1}),length(m{2}),length(m{3}));
-                u{2} = zeros(length(m{1}),length(m{2}),length(m{3}));
-                u{3} = zeros(length(m{1}),length(m{2}),length(m{3}));
-            end
-        else
-            u{1} = inpaint_nans3(u{1}); %inpaint nans from last time's edge pts
-            u{2} = inpaint_nans3(u{2});
-            u{3} = inpaint_nans3(u{3});
-            I = volumeMapping(I,m,u); %otherwise map the images w/ the initial guess
-            [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
-            %             u{1} = 0; %reset disp to zero
-            %             u{2} = 0;
-        end
+% % %         %warp images with displacement guess if a cumulative step
+% % %         if strcmp(runMode(1),'c')
+% % %             if i == 2 %only on the first iteration
+% % %                 if numel(u{1}) == 1 %on the first image the disp guess is zero
+% % %                     u{1} = zeros(length(m{1}),length(m{2}),length(m{3}));
+% % %                     u{2} = zeros(length(m{1}),length(m{2}),length(m{3}));
+% % %                     u{3} = zeros(length(m{1}),length(m{2}),length(m{3}));
+% % %                 end
+% % %             else
+% % %                 u{1} = inpaint_nans3(u{1}); %inpaint nans from last time's edge pts
+% % %                 u{2} = inpaint_nans3(u{2});
+% % %                 u{3} = inpaint_nans3(u{3});
+% % %                 I = volumeMapping(I,m,u); %otherwise map the images w/ the initial guess
+% % %                 [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
+% % %                 %             u{1} = 0; %reset disp to zero
+% % %                 %             u{2} = 0;
+% % %             end
+% % %         end
         
         % run cross-correlation to get an estimate of the displacements
         [du, cc{i-1}] = DVC(I,sSize(i,:),sSpacing(i,:),DVCPadSize,ccThreshold);
@@ -103,10 +105,10 @@ while ~converged01 && i - 1 < maxIterations
         %         u = removeOutliers(u);
         
         % mesh and pad images based on new subset size and spacing
-        [I, mFinal] = parseImages(I0,sSize(i,:),sSpacing(i,:));
+        [I, m] = parseImages(I0,sSize(i,:),sSpacing(i,:));
         
         % map volumes based on displacment field
-        I = volumeMapping(I,mFinal,u);
+        I = volumeMapping(I,m,u);
         
         disp(['Elapsed time (iteration ',num2str(i-1),'): ',num2str(toc(ti))]);
         i = i + 1;
@@ -118,7 +120,7 @@ end
 decorrFlag = decorrelationCheck(cc,sizeThresh,percentThresh,stDevThresh);
 u{1} = cc{end}.edge_pts.*u{1};
 u{2} = cc{end}.edge_pts.*u{2};
-[u,cc,mFinal] = parseOutputs(u,cc,finalSize,padSize,mFinal);
+[u,cc,m] = parseOutputs(u,cc,finalSize,padSize,mFinal);
 
 disp(['Convergence at iteration ',num2str(i)]);
 disp(['Total time: ',num2str(toc(t0))]);
@@ -188,6 +190,8 @@ I{1} = padarray(I{1},postPad,'replicate','post');
 I{2} = padarray(I0{2},prePad,'replicate','pre');
 I{2} = padarray(I{2},postPad,'replicate','post');
 
+runMode = varargin{5};
+
 varargout{    1} = I;
 varargout{end+1} = sSize;
 varargout{end+1} = sSizeMin;
@@ -195,6 +199,7 @@ varargout{end+1} = sSpacing;
 varargout{end+1} = [prePad; postPad];
 varargout{end+1} = DVCPadSize;
 varargout{end+1} = u0;
+varargout{end+1} = runMode;
 end
 
 
