@@ -1,4 +1,4 @@
-function [cc,normFluctValues] = flagOutliers(u,cc,thr,epsilon)
+function [cc,normFluctValues] = flagOutliers(u,cc,thr,epsilon,inpaint_opt)
 % u = flagOutliers(u,cc,thr,epsilon) removes outliers using the universal
 % outlier test based on
 %
@@ -40,7 +40,7 @@ normFluctMag = zeros(size(u{1}));
 
 for i = 1:length(u)
     
-    [medianU{i}, normFluct{i}] = funRemoveOutliers(u{i},epsilon);
+    [medianU{i}, normFluct{i}] = funRemoveOutliers(u{i},epsilon,inpaint_opt);
     normFluctMag = normFluctMag + normFluct{i}.^2;
 end
 
@@ -58,13 +58,13 @@ end
 end
 
 %% ========================================================================
-function [medianU, normFluct] = funRemoveOutliers(u,epsilon)
+function [medianU, normFluct] = funRemoveOutliers(u,epsilon,inpaint_opt)
 
 nSize = 3*[1 1 1];
 skipIdx = ceil(prod(nSize)/2);
 padOption = 'symmetric';
 
-u =  inpaint_nans3(double(u),0);
+u =  inpaint_nans3(double(u),inpaint_opt);
 
 medianU = medFilt3(u,nSize,padOption,skipIdx);
 fluct = u - medianU;

@@ -38,10 +38,13 @@ function [u, cc, dm, m, decorrFlag] = IDVC(varargin)
 
 
 % PRESET CONSTANTS
-maxIterations = 8; % maximum number of iterations
+maxIterations = 20; % maximum number of iterations
 dm = 8; % desired output mesh spacing
 convergenceCrit = [0.25, 0.5, 0.0625]; % convergence criteria
 ccThreshold = 1.25; % bad cross-correlation threshold (mean - ccThreshold*stdev for q-factor distribution)
+
+interp_opt = 'cubic';
+inpaint_opt = 1; %0 or 1, Laplacian or spring
 
 sizeThresh = 1331;  %Threshold for maximum size of bad correlation regions
 percentThresh = 25; %Threshold for max % of total measurement pts failing q-factor testing
@@ -69,46 +72,46 @@ while ~converged01 && i - 1 < maxIterations
         finalSize = sSize(i,:);
         
         [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
-% % %         %warp images with displacement guess if a cumulative step
-% % %         if strcmp(runMode(1),'c')
-% % %             if i == 2 %only on the first iteration
-% % %                 if numel(u{1}) == 1 %on the first image the disp guess is zero
-% % %                     u{1} = zeros(length(m{1}),length(m{2}),length(m{3}));
-% % %                     u{2} = zeros(length(m{1}),length(m{2}),length(m{3}));
-% % %                     u{3} = zeros(length(m{1}),length(m{2}),length(m{3}));
-% % %                 end
-% % %             else
-% % %                 u{1} = inpaint_nans3(u{1}); %inpaint nans from last time's edge pts
-% % %                 u{2} = inpaint_nans3(u{2});
-% % %                 u{3} = inpaint_nans3(u{3});
-% % %                 I = volumeMapping(I,m,u); %otherwise map the images w/ the initial guess
-% % %                 [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
-% % %                 %             u{1} = 0; %reset disp to zero
-% % %                 %             u{2} = 0;
-% % %             end
-% % %         end
+        %warp images with displacement guess if a cumulative step
+        if strcmp(runMode(1),'c')
+            if i == 2 %only on the first iteration
+                if numel(u{1}) == 1 %on the first image the disp guess is zero
+                    u{1} = zeros(length(m{1}),length(m{2}),length(m{3}));
+                    u{2} = zeros(length(m{1}),length(m{2}),length(m{3}));
+                    u{3} = zeros(length(m{1}),length(m{2}),length(m{3}));
+                end
+            else
+                u{1} = inpaint_nans3(u{1}); %inpaint nans from last time's edge pts
+                u{2} = inpaint_nans3(u{2});
+                u{3} = inpaint_nans3(u{3});
+                I = volumeMapping(I,m,u,interp_opt); %otherwise map the images w/ the initial guess
+                [I, m] = parseImages(I,sSize(i,:),sSpacing(i,:));
+                %             u{1} = 0; %reset disp to zero
+                %             u{2} = 0;
+            end
+        end
         
         % run cross-correlation to get an estimate of the displacements
         [du, cc{i-1}] = DVC(I,sSize(i,:),sSpacing(i,:),DVCPadSize,ccThreshold);
         
         % add the displacements from previous iteration to current
-        [u, ~, cc{i-1}, mFinal] = addDisplacements(u,du,cc{i-1},m,dm,i-1);
+        [u, ~, cc{i-1}, mFinal] = addDisplacements(u,du,cc{i-1},m,dm,i-1,interp_opt,inpaint_opt);
         
         % filter the  displacements using a predictor filter
         u = filterDisplacements(u,sSize(i,:)/dm);
         
         %flag all outliers (q-factor and fluctuation-based)
-        [cc{i-1},~] = flagOutliers(u,cc{i-1},1.25,0.1);
+        [cc{i-1},~] = flagOutliers(u,cc{i-1},1.25,0.1,inpaint_opt);
         
         % remove outliers in displacement field
-        [u,cc{i-1}.alpha_mask,cc{i-1}.nan_mask,cc{i-1}.edge_pts] = replaceOutliers(u,cc{i-1});
+        [u,cc{i-1}.alpha_mask,cc{i-1}.nan_mask,cc{i-1}.edge_pts] = replaceOutliers(u,cc{i-1},inpaint_opt);
         %         u = removeOutliers(u);
         
         % mesh and pad images based on new subset size and spacing
         [I, m] = parseImages(I0,sSize(i,:),sSpacing(i,:));
         
         % map volumes based on displacment field
-        I = volumeMapping(I,m,u);
+        I = volumeMapping(I,m,u,interp_opt);
         
         disp(['Elapsed time (iteration ',num2str(i-1),'): ',num2str(toc(ti))]);
         i = i + 1;

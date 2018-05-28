@@ -1,6 +1,5 @@
 function [] = image_comp_generalDef(folder)
 
-% folder = ['./generated_datasets'];
 %compose image with many beads
 format short
 
@@ -18,14 +17,14 @@ end
 
 disp('locations')
 %get the original location for each bead
-sizeI = [511,511,195]; %final image size less one
+sizeI = [2047,511]; %final image size less one
 spacing = 4; %particle min. spacing
-nPts = round(2500); %number of particles
+nPts = round(50000); %number of particles
 try
-    load([folder,'seed_points_3d_',num2str(nPts)])
+    load([folder,'seed_points_2d_',num2str(nPts)])
 catch
     x0 = poissonDisc(sizeI,spacing,nPts,0); %generate locations
-    save([folder,'seed_points_3d_',num2str(nPts)],'x0')
+    save([folder,'seed_points_2d_',num2str(nPts)],'x0')
 end
 
 % x0 = [100,sizeI(2)/2,sizeI(3)/2
@@ -49,7 +48,7 @@ disp('image generation')
 % small_bead_img = small_bead_synth(defMat,bead_size);
 
 %steps to progress the deformation through
-dSteps = 0:0.3:1;
+dSteps = 0.1:0.1:25;
 
 t0 = tic;
 % I = cell(1,length(translation));
@@ -67,13 +66,14 @@ for step = 1:length(dSteps)
     x1 = zeros(size(x0));
     small_bead_img = cell(1,length(x0));
     
-    %for each bead, compute the local deformation gradient (do in parallel)
+    %for each bead, compute the local deformation gradient
     parfor ii = 1:length(x0)
+        
         
         %compute the deformation matrix to impose on the bead
         if strORdisp == 's'
             
-            defMat = strain_field(x0(ii,1),x0(ii,2),x0(ii,3),step);
+            defMat = strain_field(x0(ii,1),x0(ii,2),step);
             
         elseif strORdisp == 'd'
             
@@ -88,16 +88,15 @@ for step = 1:length(dSteps)
         end
         
         %generate small bead image
-        small_bead_img{ii} = small_bead_synth_genDef_3d(defMat,bead_size);
+        small_bead_img{ii} = small_bead_synth_genDef(defMat,bead_size);
         
         %decrease the bead intensity slightly with increasing volumetric strain
         small_bead_img{ii} = 1/(det(defMat))*small_bead_img{ii};
         
         x_ = x0(ii,1);
         y_ = x0(ii,2);
-        z_ = x0(ii,3);
         %find the bead displacement
-        u_inc = disp_field(x_,y_,z_,step,sizeI);
+        u_inc = disp_field(x_,y_,step,sizeI);
         
         if sum((abs(u_inc(:)))) == 0
             small_bead_img{ii} = 0*small_bead_img{ii};
@@ -109,7 +108,7 @@ for step = 1:length(dSteps)
     end
    
     %place bead into image
-    I0_ = seedGenDefBeadSeries_3d(I0_,small_bead_img,sizeI,x1,bead_size);
+    I0_ = seedGenDefBeadSeries_2d(I0_,small_bead_img,sizeI,x1,bead_size);
     
     cT = toc(t1);
     disp(cT)
@@ -163,10 +162,10 @@ for step = 1:length(dSteps)
     save([folder,num2str(nPts),'noisyImage_0p01step_lambda_',...
         num2str(cur_stretch,3),'.mat'],'I0')
     
-%     imwrite(I0(1:512,1:512),[folder(1:end-1),'_tifs/',num2str(step+999),'_',...
-%         'noisyImage_0p01step_lambda_',...
-%         num2str(cur_stretch,3),'.tif'],...
-%         'tif','Compression','none');
+    imwrite(I0(1:512,1:512),[folder(1:end-1),'_tifs/',num2str(step+999),'_',...
+        'noisyImage_0p01step_lambda_',...
+        num2str(cur_stretch,3),'.tif'],...
+        'tif','Compression','none');
     
     save([folder,num2str(nPts),'beads_noisy_0p01step_lambda_',...
         num2str(cur_stretch,3),'_static.mat'],'I0','I1')
@@ -233,7 +232,7 @@ end
 
 
 
-function [u] = disp_field(x,y,z,step,sizeI)
+function [u] = disp_field(x,y,step,sizeI)
 %This function takes in the curent location, and returns the cartisean
 %displacement at that location.
 
@@ -243,7 +242,6 @@ E = 1e6;
 %change the coord system
 x = x - sizeI(1)/2;
 y = y - sizeI(2)/2;
-z = z - sizeI(2)/2;
 
 a = 10;
 r = sqrt(x.^2 + y.^2);
@@ -271,23 +269,21 @@ if r >= a
     
     u_r = 1/E*(Srr_int-nu*Stt_int);
     u_t = 1/E*(Stt_int-nu*Srr_int);
-    u_z = 1/E*(-nu*(Srr_int+Stt_int));
 %     urt = 1/E*(1+nu)*Srt_int;
 else
     u_r = 0;
     u_t = 0;
-    u_z = 0;
 %     urt = 0;
 end
 
 u_x = u_r*cos(u_t);
 u_y = u_r*sin(u_t);
 
-u = [u_x,u_y,u_z];
+u = [u_x,u_y];
 
 end
 
-function [e] = strain_field(x,y,z,step)
+function [e] = strain_field(x,y,step)
 %this function take in the current location and step and give back the
 %strain tensor.  Currently set up for the hole-plate (lame) problem.
 
@@ -299,7 +295,6 @@ a = 10;
 
 r = sqrt(x.^2 + y.^2);
 t = atan2(y,x);
-z = z;
 
 if r >= a
     Srr = Sinf/2*(1-a^2/r^2) + Sinf/2*(1+3*a^4/r^4-4*a^2/r^2)*cos(2*t);
@@ -309,9 +304,8 @@ if r >= a
     err = 1/E*(Srr-nu*Stt);
     ett = 1/E*(Stt-nu*Srr);
     ert = 1/E*(1+nu)*Srt;
-    ezz = 1/E*(-nu*(Srr+Stt));
     
-    e = [err ert 0; ert ett 0; 0 0 ezz];
+    e = [err ert; ert ett];
     
 else
     

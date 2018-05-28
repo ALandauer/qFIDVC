@@ -38,7 +38,7 @@ if nargin < 3,  z = 0.0075; end
 if ~iscell(u0), u0 = {u0}; end
 u = cell(size(u0));
 
-if z == 0,
+if z == 0
     u = cellfun(@double, u0, 'UniformOutput',0); % no filter
 else
     rf = generateFilter(filterSize,z);
