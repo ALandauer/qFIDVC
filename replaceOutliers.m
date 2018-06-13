@@ -1,4 +1,4 @@
-function [u,alpha_mask,nan_mask,edge_pts] = replaceOutliers(u,cc)
+function [u,alpha_mask,nan_mask,edge_pts] = replaceOutliers(u,cc,inpaint_opt)
 %function that takes in the disp field, and a cc struct with fields for
 %flagged bad points and overwrites poor values with information from nearby
 %nodes
@@ -24,8 +24,6 @@ function [u,alpha_mask,nan_mask,edge_pts] = replaceOutliers(u,cc)
 % NOTES
 % -------------------------------------------------------------------------
 %
-
-inpaint_opt = 0;
 
 %convert to alpha masks for plotting
 

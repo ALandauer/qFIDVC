@@ -64,7 +64,7 @@ if iteration > 1 % skip before first displacement estimation
 %     sSize1(sSize1<sSizeMin) = sSizeMin;
     
     % ensure that all subset sizes are at minimum 32 voxels in length
-    sSize1(sSize1 < 16) = 16; 
+    sSize1(sSize1 < sSizeMin) = sSizeMin; 
     
     % window spacing refinement. Only do if the sSpacing > 8 voxels
     if (sSpacing0 > 8), sSpacing1 = sSize1/2;

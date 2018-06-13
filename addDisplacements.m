@@ -1,4 +1,4 @@
-function [u, du, cc, m] = addDisplacements(u0,du0,cc0,m0,dm,iteration)
+function [u, du, cc, m] = addDisplacements(u0,du0,cc0,m0,dm,iteration,interp_opt,inpaint_opt)
 % u = addDisplacements(u,thr,epsilon) removes outliers using the universal
 % outlier test based on
 %
@@ -35,7 +35,7 @@ function [u, du, cc, m] = addDisplacements(u0,du0,cc0,m0,dm,iteration)
 
 cc = cc0;
 
-for i = 1:3, du0{i} = inpaint_nans3(du0{i}); end % remove NaNs if present
+for i = 1:3, du0{i} = inpaint_nans3(du0{i},inpaint_opt); end % remove NaNs if present
 
 idx = cell(1,3);
 for i = 1:3, idx{i} = m0{i}(1):dm:m0{i}(end); end % construct new meshgrid
@@ -46,7 +46,7 @@ for i = 1:3, idx{i} = m0{i}(1):dm:m0{i}(end); end % construct new meshgrid
 
 du = cell(1,3);
 for i = 1:3
-    F = griddedInterpolant(m0_{1}, m0_{2}, m0_{3}, du0{i}, 'linear');
+    F = griddedInterpolant(m0_{1}, m0_{2}, m0_{3}, du0{i}, interp_opt);
     du{i} = F(m{1},m{2},m{3});
 end
 for i = 1:2
@@ -54,7 +54,7 @@ for i = 1:2
     cc.qfactors_accept{i} = F_qf(m{1},m{2},m{3});
 end
 
-F_cc = griddedInterpolant(m0_{1}, m0_{2}, m0_{3}, cc0.max, 'linear');
+F_cc = griddedInterpolant(m0_{1}, m0_{2}, m0_{3}, cc0.max, interp_opt);
 cc.max = F_cc(m{1},m{2},m{3});
 
 if  iteration == 1

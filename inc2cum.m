@@ -19,21 +19,29 @@ function [ucum] = inc2cum(u,dm,m,option)
 
 %% Parse Inputs
 
+% Find number of dimensions
+nDim = length(size(u{1}{1})); %2D or 3D
+
 % Change order of dimension 1 and 2 and replace edge nans. 
 for i = 1:length(u)
     
-    nan_mask{i}{1} = u{i}{1}./u{i}{1};
-    nan_mask{i}{2} = u{i}{2}./u{i}{2};
+    for k = 1:nDim
+        nan_mask{i}{k} = u{i}{k}./u{i}{k};
+    end
     
-    tempU = inpaint_nans(u{i}{2});
-    u{i}{2} = inpaint_nans(u{i}{1});
-    u{i}{3} = inpaint_nans(u{i}{3});
+    if nDim == 3
+        tempU = inpaint_nans3(u{i}{2});
+        u{i}{2} = inpaint_nans3(u{i}{1});
+        u{i}{3} = inpaint_nans3(u{i}{3});
+    else
+        tempU = inpaint_nans(u{i}{2});
+        u{i}{2} = inpaint_nans(u{i}{1});
+        u{i}{3} = inpaint_nans(u{i}{3});
+    end
     u{i}{1} = tempU;
 end
 clear tempU
 
-% Find number of dimensions
-nDim = length(size(u{1}{1})); %2D or 3D
 
 %% Start inc to cum
 

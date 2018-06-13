@@ -35,7 +35,7 @@ function I = volumeMapping(varargin)
 % Experimental Mechanics. doi: 10.1007/s11340-014-9874-2
 
 
-[I0,m0,u0] = parseInputs(varargin{:});
+[I0,m0,u0,interp_opt] = parseInputs(varargin{:});
 
 idx = cell(1,3); idx_u0 = cell(1,3);
 for i = 1:3
@@ -50,7 +50,7 @@ end
 
 u = cell(1,3);
 % for i = 1:3, u{i} = mirt3D_mexinterp(u0{i}, m_u0{1}, m_u0{2}, m_u0{3}); end
-for i = 1:3, u{i} = interp3(u0{i}, m_u0{1}, m_u0{2}, m_u0{3}, 'linear'); end
+for i = 1:3, u{i} = interp3(u0{i}, m_u0{1}, m_u0{2}, m_u0{3}, interp_opt); end
 
 %% Warp images (see eq. 8)
 mForward = cellfun(@(x,y) x + y, m, u, 'UniformOutput',false);
@@ -60,8 +60,8 @@ mBackward = cellfun(@(x,y) x - y, m, u, 'UniformOutput',false);
 % I{1} = mirt3D_mexinterp(I0{1},  mForward{1}, mForward{2}, mForward{3});
 % I{2} = mirt3D_mexinterp(I0{2},  mBackward{1}, mBackward{2}, mBackward{3});
 
-I{1} = interp3(I0{1},  mForward{1}, mForward{2}, mForward{3}, 'linear');
-I{2} = interp3(I0{2},  mBackward{1}, mBackward{2}, mBackward{3}, 'linear');
+I{1} = interp3(I0{1},  mForward{1}, mForward{2}, mForward{3}, interp_opt);
+I{2} = interp3(I0{2},  mBackward{1}, mBackward{2}, mBackward{3}, interp_opt);
 
 end
 
@@ -70,6 +70,7 @@ function varargout = parseInputs(varargin)
 I0 = varargin{1};
 m  = varargin{2};
 u0 = varargin{3};
+interp_opt = varargin{4};
 
 % convert I0 to double.  Other datatypes will produce rounding errors
 I0 = cellfun(@double, I0, 'UniformOutput', false);
@@ -77,5 +78,6 @@ I0 = cellfun(@double, I0, 'UniformOutput', false);
 varargout{      1} = I0;
 varargout{end + 1} = m;
 varargout{end + 1} = u0;
+varargout{end + 1} = interp_opt;
 
 end
