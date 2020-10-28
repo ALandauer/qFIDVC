@@ -3,7 +3,7 @@
 % the deformation are defined as a four-pole Gaussian prescribed
 % displacement field.  See below for distriub
 %
-% Central z (x_3) plane. Number denots width of gaussian in voxels.  See
+% Central z (x_3) plane. Number denotes width of gaussian in voxels.  See
 % section 3.1 and 3.2 in Bar-Kochba et al. (2014)
 % --------------------------
 % |                        |
@@ -35,7 +35,10 @@
 %          Must be 32,64,96, or 128 voxels and a three column
 %          array (one for each dimenision) or scalar (equal for all
 %          dimensions).
-%   incORcum: string that defines the method of running IDVC. Options:
+%   
+%   sSize: interrogation window (subset) size minimum value.
+%
+%   runMode: string that defines the method of running IDVC. Options:
 %             cumulative (time0 -> time1, time0 -> time2, ...)
 %             (Allowable inputs: 'c','cum','cumulative')
 %             or
